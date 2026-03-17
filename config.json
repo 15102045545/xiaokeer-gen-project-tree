@@ -1,0 +1,19 @@
+{
+    "project_path": "C:\\project\\xiaokeer-discover",
+    "exclude_list": [
+        ".claude",
+        ".git",
+        ".idea",
+        ".next",
+        ".velite",
+        ".xiaokeer",
+
+        ".gitignore",
+        "installer",
+        "public",
+        "content",
+        "__pycache__",
+        "*.pyc"
+    ],
+    "output_filename": ".xiaokeer\\assets\\xiaokeer_project_tree.md"
+}
