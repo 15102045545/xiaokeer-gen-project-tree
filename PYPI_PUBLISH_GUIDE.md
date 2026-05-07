@@ -35,6 +35,41 @@ python -m pip install -U pip
 
 如果你的系统 Python/pip 因动态库导致安装失败，优先改用一个干净可用的 Python 版本（例如通过 Homebrew 安装 python@3.12）后再创建 venv。
 
+### 3.1 Python 环境与虚拟环境说明
+
+- 为什么需要 venv：避免污染系统 Python，避免不同项目依赖冲突，发布构建过程也更可复现。
+- 选择 Python 版本：建议优先使用稳定版本（3.11/3.12）。发布到 PyPI 时不要求本地版本与用户一致，但要求满足 `pyproject.toml` 的 `requires-python`。
+
+检查当前解释器与 pip：
+
+```bash
+python -V
+python -m pip --version
+```
+
+常见问题：系统/发行版会禁止对系统 Python 直接 pip 安装（PEP 668，报错 `externally-managed-environment`）。解决方式是使用 venv 或 pipx：
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -U pip
+```
+
+退出虚拟环境：
+
+```bash
+deactivate
+```
+
+建议不要把 `.venv/` 提交到仓库，应该加入 `.gitignore`。
+
+macOS 特殊情况：如果遇到 `pyexpat` / `libexpat` 相关的 ImportError，通常需要安装新版 expat 并让 Python 运行时优先使用它：
+
+```bash
+brew install expat
+export DYLD_LIBRARY_PATH=/opt/homebrew/opt/expat/lib:$DYLD_LIBRARY_PATH
+```
+
 ## 4. 创建 PyPI API Token（用于上传）
 
 建议使用 API Token 上传，而不是账户密码。
@@ -109,4 +144,3 @@ xgentree -h
 
 twine 上传时可能会看到 “This environment is not supported for trusted publishing”，这不影响 token 方式上传成功。
 Trusted Publishing 是另一种基于 OIDC 的自动化发布方式，通常配合 CI（如 GitHub Actions）使用。
-
