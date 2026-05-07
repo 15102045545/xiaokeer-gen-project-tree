@@ -8,6 +8,10 @@ node_modules/
 .cursor/
 log/
 xiaokeer_project_tree.md
+xgentree_project_tree.md
+config.temp.json
+config.tmp.json
+dist_new/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
