@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "xiaokeer.gen.project.tree"
+version = "0.1.1"
+description = "一个将项目目录结构转换为Markdown格式文档的命令行工具，支持排除规则和.gitignore解析。"
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [{ name = "xiaokeer" }]
+license = "MIT"
+license-files = ["LICENSE"]
+keywords = ["project", "tree", "markdown", "cli"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3 :: Only",
+  "Environment :: Console",
+  "Topic :: Software Development :: Documentation",
+  "Topic :: Utilities",
+]
+
+[project.scripts]
+xgentree = "xiaokeer.gen.project.tree.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
