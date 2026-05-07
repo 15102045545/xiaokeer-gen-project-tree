@@ -5,9 +5,9 @@ import os
 from pathlib import Path
 
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
-from config import Config, ConfigError
+from xiaokeer.gen.project.tree.config import Config, ConfigError
 
 
 class TestConfig(unittest.TestCase):

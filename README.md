@@ -14,13 +14,17 @@
 ## 安装依赖
 
 ```bash
-pip install -r requirements.txt
+pip install xiaokeer.gen.project.tree
 ```
 
-或直接安装：
+PyPI:
+
+https://pypi.org/project/xiaokeer.gen.project.tree/
+
+从源码安装（开发者）：
 
 ```bash
-pip install pathspec>=1.0.0
+pip install -e .
 ```
 
 ## 快速开始
@@ -45,7 +49,7 @@ pip install pathspec>=1.0.0
 ### 2. 运行工具
 
 ```bash
-python main.py -c config.json
+xgentree -c config.json
 ```
 
 ### 3. 查看结果
@@ -85,7 +89,7 @@ python main.py -c config.json
 ## 命令行参数
 
 ```
-usage: main.py [-h] -c CONFIG [-v]
+usage: xgentree [-h] -c CONFIG [-v]
 
 项目目录转为md树文档工具
 
@@ -101,19 +105,19 @@ optional arguments:
 ### 基本使用
 
 ```bash
-python main.py -c config.json
+xgentree -c config.json
 ```
 
 ### 显示详细日志
 
 ```bash
-python main.py -c config.json -v
+xgentree -c config.json -v
 ```
 
 ### 使用相对路径配置文件
 
 ```bash
-python main.py -c ./config.json
+xgentree -c ./config.json
 ```
 
 ## 输出示例
@@ -155,15 +159,23 @@ python main.py -c ./config.json
 ## 文件结构
 
 ```
-gen_project_tree/
-├── main.py              # 主入口
-├── config.py            # 配置管理模块
-├── scanner.py           # 目录扫描模块
-├── gitignore_parser.py  # .gitignore解析模块
-├── generator.py         # Markdown生成模块
-├── config.json          # 默认配置文件模板
-├── requirements.txt     # 依赖清单
-└── tests/               # 测试文件目录
+xiaokeer-gen-project-tree/
+├── pyproject.toml
+├── LICENSE
+├── README.md
+├── main.py
+├── config.json
+├── requirements.txt
+├── src/
+│   └── xiaokeer/gen/project/tree/
+│       ├── __init__.py
+│       ├── __main__.py
+│       ├── cli.py
+│       ├── config.py
+│       ├── scanner.py
+│       ├── gitignore_parser.py
+│       └── generator.py
+└── tests/
     ├── test_config.py
     ├── test_scanner.py
     └── test_generator.py
@@ -182,8 +194,21 @@ gen_project_tree/
 ## 运行测试
 
 ```bash
-cd gen_project_tree
 python -m unittest discover tests -v
+```
+
+## 发布到 PyPI
+
+- PyPI 官网: https://pypi.org/
+- TestPyPI 官网: https://test.pypi.org/
+
+推荐先发布到 TestPyPI 验证安装与运行，再发布到 PyPI。
+
+```bash
+python -m pip install --upgrade build twine
+python -m build
+python -m twine upload -r testpypi dist/*
+python -m twine upload dist/*
 ```
 
 ## 注意事项

@@ -4,10 +4,10 @@ from pathlib import Path
 import shutil
 
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
-from scanner import TreeNode
-from generator import MarkdownGenerator, GeneratorError
+from xiaokeer.gen.project.tree.scanner import TreeNode
+from xiaokeer.gen.project.tree.generator import MarkdownGenerator, GeneratorError
 
 
 class TestMarkdownGenerator(unittest.TestCase):

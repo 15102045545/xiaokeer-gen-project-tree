@@ -5,10 +5,10 @@ from pathlib import Path
 import shutil
 
 import sys
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
-from scanner import DirectoryScanner, TreeNode
-from gitignore_parser import parse_gitignore_file
+from xiaokeer.gen.project.tree.scanner import DirectoryScanner, TreeNode
+from xiaokeer.gen.project.tree.gitignore_parser import parse_gitignore_file
 
 
 class TestDirectoryScanner(unittest.TestCase):
