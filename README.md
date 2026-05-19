@@ -14,6 +14,7 @@
 - 支持中文文件名和路径
 - 输出文档包含本次生成使用的配置
 - 默认节点描述为字面量 `${description}`，方便后续人工或工具替换
+- 明确提示覆盖已有人工业务说明的风险，避免 agent 把占位符误判为真实语义
 - `xgentree --help` 内置完整使用说明
 
 ## 安装
@@ -87,6 +88,34 @@ project_path/output_filename
 /absolute/path/to/project/xiaokeer_project_tree.md
 /absolute/path/to/project/xiaokeer_project_tree.html
 ```
+
+## 重要风险：不要误把占位符当成业务语义
+
+`xgentree` 生成的是目录结构文档骨架，不是业务理解结果。每个文件夹和文件后面的 `${description}` 是字面量占位符，意思是“这里等待人或后续工具补充说明”，不是该节点已经具备业务语义。
+
+工具当前不会读取、合并或保留已有 Markdown / HTML 文档中人工填写过的说明。如果 `output_filename` 指向一个已经存在的文件，生成时会重新写入该文件；这可能覆盖团队已经辛苦补充好的模块职责、接口含义、业务边界等说明。
+
+适合使用的场景：
+
+- 首次为项目生成目录树骨架。
+- 项目结构变化后，生成新的候选树用于人工对比。
+- CI 或 agent 只需要最新结构快照，且不依赖已有说明文本。
+- 输出到一个新的临时文件，例如 `xiaokeer_project_tree.new.md`，再由人通过 `git diff` 或对比工具决定如何合并。
+
+不适合直接覆盖的场景：
+
+- 旧文档里的 `${description}` 已经被替换为真实业务说明。
+- agent 准备把新生成的目录树当成“已经理解业务语义”的事实来源。
+- 当前输出文件没有进入版本控制，覆盖后无法通过 `git diff` 找回旧说明。
+- 只是想补充少量新文件说明，却没有人工合并流程。
+
+给 agent 的建议：
+
+1. 运行前先检查目标输出文件是否存在。
+2. 如果文件存在，并且其中已经有非 `${description}` 的说明文本，不要直接覆盖。
+3. 先执行 `xgentree -c config.json --output-format none` 检查扫描范围。
+4. 把 `output_filename` 改成新的候选文件名后再生成。
+5. 生成后只把结构差异作为参考，不要把 `${description}` 当成业务事实。
 
 ## 命令
 
@@ -254,12 +283,15 @@ Markdown 文件保持原有纯 Markdown 列表格式，不包含 HTML `<details>
 
 1. 建议使用绝对路径配置 `project_path`。
 2. 默认输出文件会保存在 `project_path/output_filename`。
-3. 符号链接会被自动跳过。
-4. 无权限访问的目录会被跳过并记录警告日志。
-5. `exclude_list` 是按名称排除，可能影响多个同名文件或目录。
-6. `exclude_paths` 是按项目根相对路径精确排除，更适合只排除某一个具体文件或目录。
-7. 需要路径 glob 或否定规则时，请使用 `.gitignore`。
-8. Markdown 输出保持纯 Markdown 列表；需要可折叠目录树时，请使用 `--output-format html` 或 `--output-format both` 查看独立 HTML 文件。
+3. 如果默认输出文件已存在，生成会重写该文件；不会自动保留旧说明。
+4. `${description}` 是占位符，不是业务语义。
+5. 已人工维护过说明的目录树，建议输出到新文件后人工合并。
+6. 符号链接会被自动跳过。
+7. 无权限访问的目录会被跳过并记录警告日志。
+8. `exclude_list` 是按名称排除，可能影响多个同名文件或目录。
+9. `exclude_paths` 是按项目根相对路径精确排除，更适合只排除某一个具体文件或目录。
+10. 需要路径 glob 或否定规则时，请使用 `.gitignore`。
+11. Markdown 输出保持纯 Markdown 列表；需要可折叠目录树时，请使用 `--output-format html` 或 `--output-format both` 查看独立 HTML 文件。
 
 ## 运行测试
 
@@ -290,6 +322,14 @@ python -m twine upload dist/*
 不要把 PyPI token 写入 README、发布指南、源码或任何会提交的文件。
 
 ## 版本历史
+
+### v1.0.4 (2026-05-20)
+
+- 文档：强化 `${description}` 只是占位符，不代表真实业务语义
+- 文档：明确同名输出文件会被重新写入，工具不会合并或保留已有人工说明
+- 文档：新增 agent 使用边界，建议先 dry-run、输出到候选文件、人工 diff 后再替换
+- 增强：`xgentree --help` 增加覆盖风险、适合使用场景和不适合直接覆盖场景
+- 测试：新增 CLI help 回归测试，防止风险提示被后续改动移除
 
 ### v1.0.3 (2026-05-19)
 

@@ -41,7 +41,18 @@ class TestCliHelp(unittest.TestCase):
         result = self._run_cli("--version")
 
         self.assertEqual(result.returncode, 0)
-        self.assertEqual(result.stdout.strip(), "xgentree 1.0.3")
+        self.assertEqual(result.stdout.strip(), "xgentree 1.0.4")
+
+    def test_help_warns_about_description_placeholder_and_overwrite_risk(self):
+        result = self._run_cli("--help")
+
+        self.assertEqual(result.returncode, 0)
+        self.assertIn("${description}", result.stdout)
+        self.assertIn("待补充占位符", result.stdout)
+        self.assertIn("不会读取、合并或保留已有文档中人工填写的说明", result.stdout)
+        self.assertIn("不要直接覆盖", result.stdout)
+        self.assertIn("人工 diff", result.stdout)
+        self.assertIn("已理解业务语义", result.stdout)
 
     def test_invalid_output_format_is_rejected(self):
         result = self._run_cli("-c", "config.json", "--output-format", "pdf")
