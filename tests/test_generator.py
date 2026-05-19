@@ -57,7 +57,7 @@ class TestMarkdownGenerator(unittest.TestCase):
         generator = MarkdownGenerator(
             project_path=self.test_dir,
             output_filename='test_output.md',
-            description='desc'
+            description='${description}'
         )
         
         output_path = generator.generate(tree)
@@ -69,6 +69,9 @@ class TestMarkdownGenerator(unittest.TestCase):
         self.assertIn('## 目录结构', content)
         self.assertIn('📁', content)
         self.assertIn('📄', content)
+        self.assertIn('<details open>', content)
+        self.assertIn('<summary>', content)
+        self.assertIn('${description}', content)
     
     def test_tc_gen_002_empty_tree(self):
         root = TreeNode(
@@ -171,9 +174,8 @@ class TestMarkdownGenerator(unittest.TestCase):
         content = output_path.read_text(encoding='utf-8')
         self.assertIn('deep.txt', content)
         
-        lines = content.split('\n')
-        deep_line = [l for l in lines if 'deep.txt' in l][0]
-        self.assertTrue(deep_line.startswith('      -'))
+        self.assertIn('<details open>', content)
+        self.assertIn('./level1/level2/level3/deep.txt', content)
     
     def test_tc_gen_007_windows_path(self):
         root = TreeNode(
@@ -201,7 +203,7 @@ class TestMarkdownGenerator(unittest.TestCase):
         
         content = output_path.read_text(encoding='utf-8')
         self.assertIn('./subdir/file.txt', content)
-        self.assertNotIn('\\', content.split('](')[1].split(')')[0])
+        self.assertNotIn('\\', content.split('href="')[1].split('"')[0])
     
     def test_tc_gen_008_custom_description(self):
         root = TreeNode(
@@ -230,6 +232,68 @@ class TestMarkdownGenerator(unittest.TestCase):
         
         content = output_path.read_text(encoding='utf-8')
         self.assertIn('自定义描述', content)
+
+    def test_default_description_is_placeholder(self):
+        generator = MarkdownGenerator(
+            project_path=self.test_dir,
+            output_filename='placeholder.md'
+        )
+
+        self.assertEqual(generator.description, '${description}')
+
+    def test_markdown_tree_uses_collapsible_html_details(self):
+        tree = self._create_simple_tree()
+
+        generator = MarkdownGenerator(
+            project_path=self.test_dir,
+            output_filename='collapsible.md'
+        )
+
+        output_path = generator.generate(tree)
+        content = output_path.read_text(encoding='utf-8')
+
+        self.assertIn('<details open>', content)
+        self.assertIn('<summary>📁 <a href="./dir1/">dir1</a> - ${description}</summary>', content)
+        self.assertIn('<li>📄 <a href="./dir1/file2.py">file2.py</a> - ${description}</li>', content)
+
+    def test_html_output_generates_html_file_with_collapsible_tree(self):
+        tree = self._create_simple_tree()
+
+        generator = MarkdownGenerator(
+            project_path=self.test_dir,
+            output_filename='tree.md'
+        )
+
+        output_paths = generator.generate_outputs(tree, 'html')
+
+        self.assertEqual(len(output_paths), 1)
+        self.assertEqual(output_paths[0], self.test_dir / 'tree.html')
+        content = output_paths[0].read_text(encoding='utf-8')
+        self.assertIn('<!doctype html>', content)
+        self.assertIn('<style>', content)
+        self.assertIn('<details open>', content)
+        self.assertIn('<summary>📁 <a href="./dir1/">dir1</a> - ${description}</summary>', content)
+
+    def test_generate_outputs_both_generates_markdown_and_html(self):
+        tree = self._create_simple_tree()
+
+        generator = MarkdownGenerator(
+            project_path=self.test_dir,
+            output_filename='tree.md'
+        )
+
+        output_paths = generator.generate_outputs(tree, 'both')
+
+        self.assertEqual(output_paths, [self.test_dir / 'tree.md', self.test_dir / 'tree.html'])
+        self.assertTrue((self.test_dir / 'tree.md').exists())
+        self.assertTrue((self.test_dir / 'tree.html').exists())
+
+    def test_generate_outputs_rejects_invalid_format(self):
+        tree = self._create_simple_tree()
+        generator = MarkdownGenerator(project_path=self.test_dir, output_filename='tree.md')
+
+        with self.assertRaises(ValueError):
+            generator.generate_outputs(tree, 'pdf')
     
     def test_folder_link_ends_with_slash(self):
         root = TreeNode(
@@ -283,8 +347,8 @@ class TestMarkdownGenerator(unittest.TestCase):
         output_path = generator.generate(root)
         content = output_path.read_text(encoding='utf-8')
         
-        self.assertIn('./testfile.txt)', content)
-        self.assertNotIn('./testfile.txt/)', content)
+        self.assertIn('./testfile.txt"', content)
+        self.assertNotIn('./testfile.txt/"', content)
     
     def test_set_description(self):
         generator = MarkdownGenerator(

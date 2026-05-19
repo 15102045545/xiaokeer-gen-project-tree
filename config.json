@@ -15,5 +15,9 @@
         "__pycache__",
         "*.pyc"
     ],
+    "exclude_paths": [
+        "src/generated/client.py",
+        "dist/assets"
+    ],
     "output_filename": ".xiaokeer\\assets\\xiaokeer_project_tree.md"
 }

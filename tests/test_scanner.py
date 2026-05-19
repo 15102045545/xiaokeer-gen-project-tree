@@ -59,6 +59,39 @@ class TestDirectoryScanner(unittest.TestCase):
         
         pyc_count = self._count_files_by_extension(tree, '.pyc')
         self.assertEqual(pyc_count, 0)
+
+    def test_exclude_paths_excludes_exact_relative_file_only(self):
+        (self.test_dir / 'dir2' / 'file1.txt').write_text('same basename')
+
+        scanner = DirectoryScanner(self.test_dir, [], ['dir1/file1.txt'])
+        tree = scanner.scan()
+
+        dir1_file_found = self._find_relative_path_in_tree(tree, 'dir1/file1.txt')
+        dir2_file_found = self._find_relative_path_in_tree(tree, 'dir2/file1.txt')
+
+        self.assertFalse(dir1_file_found)
+        self.assertTrue(dir2_file_found)
+
+    def test_exclude_paths_excludes_exact_relative_directory_subtree(self):
+        scanner = DirectoryScanner(self.test_dir, [], ['dir2/subdir'])
+        tree = scanner.scan()
+
+        subdir_found = self._find_relative_path_in_tree(tree, 'dir2/subdir')
+        nested_file_found = self._find_relative_path_in_tree(tree, 'dir2/subdir/file3.txt')
+        dir2_found = self._find_relative_path_in_tree(tree, 'dir2')
+
+        self.assertFalse(subdir_found)
+        self.assertFalse(nested_file_found)
+        self.assertTrue(dir2_found)
+
+    def test_exclude_list_still_excludes_by_name_globally(self):
+        (self.test_dir / 'dir2' / 'file1.txt').write_text('same basename')
+
+        scanner = DirectoryScanner(self.test_dir, ['file1.txt'], [])
+        tree = scanner.scan()
+
+        self.assertFalse(self._find_relative_path_in_tree(tree, 'dir1/file1.txt'))
+        self.assertFalse(self._find_relative_path_in_tree(tree, 'dir2/file1.txt'))
     
     def test_tc_scan_004_gitignore_parsing(self):
         gitignore_content = "*.log\ntemp/\n"
@@ -174,6 +207,14 @@ class TestDirectoryScanner(unittest.TestCase):
             return True
         for child in node.children:
             if self._find_dir_in_tree(child, dirname):
+                return True
+        return False
+
+    def _find_relative_path_in_tree(self, node: TreeNode, relative_path: str) -> bool:
+        if node.relative_path == relative_path:
+            return True
+        for child in node.children:
+            if self._find_relative_path_in_tree(child, relative_path):
                 return True
         return False
 

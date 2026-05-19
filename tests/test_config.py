@@ -48,6 +48,38 @@ class TestConfig(unittest.TestCase):
         config = Config.from_file(str(config_path))
         
         self.assertEqual(config.exclude_list, [])
+
+    def test_missing_exclude_paths_defaults_to_empty_list(self):
+        config_data = {
+            'project_path': str(self.test_dir)
+        }
+        config_path = self._create_config_file(config_data)
+
+        config = Config.from_file(str(config_path))
+
+        self.assertEqual(config.exclude_paths, [])
+
+    def test_exclude_paths_are_normalized_to_posix_relative_paths(self):
+        config_data = {
+            'project_path': str(self.test_dir),
+            'exclude_paths': ['src\\generated\\foo.py', 'dist/assets']
+        }
+        config_path = self._create_config_file(config_data)
+
+        config = Config.from_file(str(config_path))
+
+        self.assertEqual(config.exclude_paths, ['src/generated/foo.py', 'dist/assets'])
+
+    def test_exclude_paths_empty_strings_are_ignored(self):
+        config_data = {
+            'project_path': str(self.test_dir),
+            'exclude_paths': ['src/generated/foo.py', '', '  ']
+        }
+        config_path = self._create_config_file(config_data)
+
+        config = Config.from_file(str(config_path))
+
+        self.assertEqual(config.exclude_paths, ['src/generated/foo.py'])
     
     def test_tc_cfg_003_missing_output_filename(self):
         config_data = {
@@ -154,6 +186,7 @@ class TestConfig(unittest.TestCase):
         config_data = {
             'project_path': str(self.test_dir),
             'exclude_list': ['.git'],
+            'exclude_paths': ['src/generated/foo.py'],
             'output_filename': 'test.md'
         }
         config_path = self._create_config_file(config_data)
@@ -163,6 +196,7 @@ class TestConfig(unittest.TestCase):
         
         self.assertEqual(result['project_path'], str(Path(self.test_dir).resolve()))
         self.assertEqual(result['exclude_list'], ['.git'])
+        self.assertEqual(result['exclude_paths'], ['src/generated/foo.py'])
         self.assertEqual(result['output_filename'], 'test.md')
     
     def test_invalid_output_filename_chars(self):
@@ -198,6 +232,66 @@ class TestConfig(unittest.TestCase):
         with self.assertRaises(ConfigError) as context:
             Config.from_file(str(config_path))
         
+        self.assertEqual(context.exception.error_code, 1)
+
+    def test_exclude_paths_not_list(self):
+        config_data = {
+            'project_path': str(self.test_dir),
+            'exclude_paths': 'src/generated/foo.py'
+        }
+        config_path = self._create_config_file(config_data)
+
+        with self.assertRaises(ConfigError) as context:
+            Config.from_file(str(config_path))
+
+        self.assertEqual(context.exception.error_code, 1)
+
+    def test_exclude_paths_elements_must_be_strings(self):
+        config_data = {
+            'project_path': str(self.test_dir),
+            'exclude_paths': ['src/generated/foo.py', 123]
+        }
+        config_path = self._create_config_file(config_data)
+
+        with self.assertRaises(ConfigError) as context:
+            Config.from_file(str(config_path))
+
+        self.assertEqual(context.exception.error_code, 1)
+
+    def test_exclude_paths_reject_absolute_paths(self):
+        config_data = {
+            'project_path': str(self.test_dir),
+            'exclude_paths': ['/tmp/generated/foo.py']
+        }
+        config_path = self._create_config_file(config_data)
+
+        with self.assertRaises(ConfigError) as context:
+            Config.from_file(str(config_path))
+
+        self.assertEqual(context.exception.error_code, 1)
+
+    def test_exclude_paths_reject_parent_traversal(self):
+        config_data = {
+            'project_path': str(self.test_dir),
+            'exclude_paths': ['src/../secret.txt']
+        }
+        config_path = self._create_config_file(config_data)
+
+        with self.assertRaises(ConfigError) as context:
+            Config.from_file(str(config_path))
+
+        self.assertEqual(context.exception.error_code, 1)
+
+    def test_exclude_paths_reject_project_root(self):
+        config_data = {
+            'project_path': str(self.test_dir),
+            'exclude_paths': ['.']
+        }
+        config_path = self._create_config_file(config_data)
+
+        with self.assertRaises(ConfigError) as context:
+            Config.from_file(str(config_path))
+
         self.assertEqual(context.exception.error_code, 1)
 
 

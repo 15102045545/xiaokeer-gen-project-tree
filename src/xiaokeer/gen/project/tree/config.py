@@ -1,4 +1,4 @@
-from pathlib import Path
+from pathlib import Path, PurePosixPath, PureWindowsPath
 from typing import Any, Dict, List
 import json
 import logging
@@ -24,6 +24,7 @@ class Config:
         self._raw_config: Dict[str, Any] = {}
         self._project_path: Path = None
         self._exclude_list: List[str] = []
+        self._exclude_paths: List[str] = []
         self._output_filename: str = self.DEFAULT_OUTPUT_FILENAME
 
         self._load_config(config_path)
@@ -36,6 +37,10 @@ class Config:
     @property
     def exclude_list(self) -> List[str]:
         return self._exclude_list.copy()
+
+    @property
+    def exclude_paths(self) -> List[str]:
+        return self._exclude_paths.copy()
 
     @property
     def output_filename(self) -> str:
@@ -53,6 +58,7 @@ class Config:
         return {
             "project_path": str(self._project_path),
             "exclude_list": self._exclude_list,
+            "exclude_paths": self._exclude_paths,
             "output_filename": self._output_filename,
         }
 
@@ -80,6 +86,7 @@ class Config:
     def _validate_and_apply(self) -> None:
         self._validate_project_path()
         self._validate_exclude_list()
+        self._validate_exclude_paths()
         self._validate_output_filename()
         logger.info("配置验证通过")
 
@@ -128,6 +135,55 @@ class Config:
                 logger.warning("exclude_list 中包含空字符串，将被忽略")
 
         self._exclude_list = validated_list
+
+    def _validate_exclude_paths(self) -> None:
+        if "exclude_paths" not in self._raw_config:
+            self._exclude_paths = []
+            return
+
+        exclude_paths = self._raw_config["exclude_paths"]
+
+        if not isinstance(exclude_paths, list):
+            raise ConfigError("配置错误: exclude_paths 必须为列表类型", error_code=1)
+
+        validated_paths = []
+        for item in exclude_paths:
+            if not isinstance(item, str):
+                raise ConfigError("配置错误: exclude_paths 中的元素必须为字符串", error_code=1)
+
+            stripped = item.strip()
+            if not stripped:
+                logger.warning("exclude_paths 中包含空字符串，将被忽略")
+                continue
+
+            normalized = self._normalize_exclude_path(stripped)
+            validated_paths.append(normalized)
+
+        self._exclude_paths = validated_paths
+
+    def _normalize_exclude_path(self, raw_path: str) -> str:
+        normalized_input = raw_path.replace("\\", "/")
+
+        if (
+            Path(normalized_input).is_absolute()
+            or PureWindowsPath(raw_path).is_absolute()
+            or PureWindowsPath(raw_path).drive
+        ):
+            raise ConfigError(f"配置错误: exclude_paths 必须使用相对路径: {raw_path}", error_code=1)
+
+        path = PurePosixPath(normalized_input)
+        parts = path.parts
+
+        if not parts:
+            raise ConfigError("配置错误: exclude_paths 不能指向项目根目录", error_code=1)
+
+        if any(part == ".." for part in parts):
+            raise ConfigError(f"配置错误: exclude_paths 不能包含 '..': {raw_path}", error_code=1)
+
+        if path.as_posix() == ".":
+            raise ConfigError("配置错误: exclude_paths 不能指向项目根目录", error_code=1)
+
+        return path.as_posix().rstrip("/")
 
     def _validate_output_filename(self) -> None:
         if "output_filename" not in self._raw_config:

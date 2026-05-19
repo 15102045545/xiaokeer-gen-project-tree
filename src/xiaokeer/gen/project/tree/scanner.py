@@ -38,10 +38,12 @@ class TreeNode:
 
 
 class DirectoryScanner:
-    def __init__(self, project_path: Path, exclude_list: List[str]):
+    def __init__(self, project_path: Path, exclude_list: List[str], exclude_paths: Optional[List[str]] = None):
         self.project_path = project_path
         self.exclude_list = exclude_list
+        self.exclude_paths = exclude_paths or []
         self._simple_patterns: Set[str] = set()
+        self._exact_relative_paths: Set[str] = set()
         self._gitignore_spec: Optional[GitIgnoreSpec] = None
         self._file_count: int = 0
         self._directory_count: int = 0
@@ -67,6 +69,7 @@ class DirectoryScanner:
 
     def _build_exclude_spec(self) -> None:
         self._simple_patterns = set()
+        self._exact_relative_paths = {path.replace("\\", "/").strip().rstrip("/") for path in self.exclude_paths if path.strip()}
         self._gitignore_spec = None
 
         parse_gitignore = False
@@ -88,21 +91,27 @@ class DirectoryScanner:
 
     def _is_excluded(self, path: Path) -> bool:
         name = path.name
+        relative_str = ""
+
+        try:
+            relative = path.relative_to(self.project_path)
+            relative_str = relative.as_posix().rstrip("/")
+        except ValueError:
+            relative_str = ""
+
+        if relative_str and relative_str in self._exact_relative_paths:
+            return True
 
         for pattern in self._simple_patterns:
             if self._matches_pattern(name, pattern):
                 return True
 
         if self._gitignore_spec is not None:
-            try:
-                relative = path.relative_to(self.project_path)
-                relative_str = relative.as_posix()
-                if path.is_dir():
-                    relative_str += "/"
-                if self._gitignore_spec.match_file(relative_str):
-                    return True
-            except ValueError:
-                pass
+            gitignore_path = relative_str
+            if path.is_dir():
+                gitignore_path += "/"
+            if gitignore_path and self._gitignore_spec.match_file(gitignore_path):
+                return True
 
         return False
 

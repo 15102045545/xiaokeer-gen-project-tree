@@ -96,7 +96,7 @@ python -m pip install -U build twine
 构建发布产物：
 
 ```bash
-rm -rf dist build
+rm -rf dist build *.egg-info src/*.egg-info
 python -m build
 ```
 
@@ -112,6 +112,8 @@ python -m twine check dist/*
 
 ## 6. 上传到 PyPI（正式发布）
 
+官方 Python Packaging 指南推荐使用 `build` 生成发行包，并使用 `twine` 上传。发布前必须先运行 `twine check`。
+
 ```bash
 python -m twine upload dist/*
 ```
@@ -119,6 +121,52 @@ python -m twine upload dist/*
 出现提示时：
 - username：`__token__`
 - password：粘贴你的 PyPI API Token
+
+### 6.1 使用本地 .env 保存上传凭据
+
+可以在项目根目录创建本地 `.env`，避免每次发布都手动输入 token：
+
+```bash
+TWINE_USERNAME=__token__
+TWINE_PASSWORD=pypi-your-token
+```
+
+`.env` 已被 `.gitignore` 忽略，不要提交。文档中只能说明 `.env` 的字段名和读取方式，不能写入真实 token。
+
+发布前读取 `.env`：
+
+```bash
+set -a
+source .env
+set +a
+python -m twine upload dist/*
+```
+
+发布前确认 token 没有被跟踪：
+
+```bash
+git status --short
+git ls-files .env
+```
+
+`git ls-files .env` 应该没有任何输出。
+
+### 6.2 发布 1.0.2 的完整命令
+
+```bash
+cd /Users/chongwen002/project/xiaokeer-gen-project-tree
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -U pip build twine
+python -m unittest discover tests -v
+rm -rf dist build *.egg-info src/*.egg-info
+python -m build
+python -m twine check dist/*
+set -a
+source .env
+set +a
+python -m twine upload dist/*
+```
 
 ## 7. 发布后验证（建议）
 
@@ -130,6 +178,20 @@ source /tmp/xgentree-verify/bin/activate
 pip install -U pip
 pip install xiaokeer.gen.project.tree
 xgentree -h
+xgentree --version
+```
+
+验证指定版本：
+
+```bash
+python3 -m venv /tmp/xgentree-verify-1.0.2
+source /tmp/xgentree-verify-1.0.2/bin/activate
+pip install -U pip
+pip install xiaokeer.gen.project.tree==1.0.2
+xgentree --help
+xgentree --version
+xgentree -c /path/to/config.json --output-format none
+xgentree -c /path/to/config.json --output-format both
 ```
 
 ## 8. 常见问题
