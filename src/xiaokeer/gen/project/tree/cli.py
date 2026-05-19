@@ -17,7 +17,7 @@ def setup_logging(verbose: bool = False) -> None:
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="xgentree: 将项目目录结构生成带跳转链接的 Markdown 树文档",
+        description="xgentree: 将项目目录结构生成带跳转链接的 Markdown/HTML 树文档",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 快速开始:
@@ -63,10 +63,11 @@ def parse_args():
   - 无权限访问的目录会被跳过并记录警告。
   - --output-format 可选 none/md/html/both，默认 md。
   - none 是 dry-run：只扫描并打印统计，不写文件。
-  - md 生成 project_path/output_filename，目录树使用 HTML details/summary，可在支持 HTML 的 Markdown 渲染器中折叠。
-  - html 生成同 stem 的 .html 文件，例如 tree.md -> tree.html。
+  - md 生成 project_path/output_filename，保持原有纯 Markdown 列表目录树。
+  - html 生成同 stem 的 .html 文件，例如 tree.md -> tree.html，目录树使用 HTML details/summary，可折叠。
   - both 同时生成 md 和 html。
-  - 输出文档包含项目路径、配置 JSON 和可折叠链接树。
+  - 输出文档包含项目路径、配置 JSON 和带跳转链接的目录树。
+  - Markdown 输出不包含 HTML details/summary；需要可折叠树时使用 html 或 both。
 
 错误码:
   1  配置文件错误，例如文件不存在、JSON 错误、字段类型错误、非法 exclude_paths。

@@ -1,6 +1,6 @@
 # xgentree
 
-`xgentree` 是一个将项目目录结构转换为可折叠 Markdown / HTML 树文档的命令行工具。它支持按名称排除、按项目根相对路径精确排除、读取 `.gitignore` 规则，并生成带跳转链接的目录树。
+`xgentree` 是一个将项目目录结构转换为 Markdown / HTML 树文档的命令行工具。它支持按名称排除、按项目根相对路径精确排除、读取 `.gitignore` 规则，并生成带跳转链接的目录树。
 
 ## 功能特性
 
@@ -8,7 +8,8 @@
 - `exclude_list`：按文件名/目录名排除，支持 basename 精确匹配和 basename 通配
 - `exclude_paths`：按相对于 `project_path` 根目录的精确相对路径排除
 - 可读取项目根目录 `.gitignore` 规则
-- 生成基于 `<details>/<summary>` 的可折叠目录树
+- Markdown 输出保持原有纯 Markdown 列表格式
+- HTML 输出生成基于 `<details>/<summary>` 的可折叠目录树
 - 支持 `none` / `md` / `html` / `both` 四种命令行输出模式
 - 支持中文文件名和路径
 - 输出文档包含本次生成使用的配置
@@ -125,7 +126,7 @@ xgentree --help
 | `html` | 生成同 stem 的 `.html` 文件，例如 `tree.md -> tree.html` |
 | `both` | 同时生成 Markdown 和 HTML |
 
-Markdown 文件中的目录树使用 HTML `<details>/<summary>`，在支持 HTML 的 Markdown 渲染器中可以折叠。HTML 文件包含完整 HTML 文档和最小 CSS。目录默认展开，便于打开后直接浏览，也可以手动折叠。
+Markdown 文件保持原有纯 Markdown 列表格式，不包含 HTML `<details>/<summary>`。HTML 文件包含完整 HTML 文档、最小 CSS 和基于 `<details>/<summary>` 的可折叠目录树。HTML 目录默认展开，便于打开后直接浏览，也可以手动折叠。
 
 ## 排除规则
 
@@ -232,23 +233,11 @@ Markdown 文件中的目录树使用 HTML `<details>/<summary>`，在支持 HTML
 
 ## 目录结构
 
-<li>
-  <details open>
-    <summary>📁 <a href="./src/">src</a> - ${description}</summary>
-    <ul>
-      <li>
-        <details open>
-          <summary>📁 <a href="./src/utils/">utils</a> - ${description}</summary>
-          <ul>
-            <li>📄 <a href="./src/utils/helper.py">helper.py</a> - ${description}</li>
-          </ul>
-        </details>
-      </li>
-      <li>📄 <a href="./src/main.py">main.py</a> - ${description}</li>
-    </ul>
-  </details>
-</li>
-<li>📄 <a href="./README.md">README.md</a> - ${description}</li>
+- 📁 [src](./src/) - ${description}
+  - 📁 [utils](./src/utils/) - ${description}
+    - 📄 [helper.py](./src/utils/helper.py) - ${description}
+  - 📄 [main.py](./src/main.py) - ${description}
+- 📄 [README.md](./README.md) - ${description}
 ````
 
 ## 错误码
@@ -270,7 +259,7 @@ Markdown 文件中的目录树使用 HTML `<details>/<summary>`，在支持 HTML
 5. `exclude_list` 是按名称排除，可能影响多个同名文件或目录。
 6. `exclude_paths` 是按项目根相对路径精确排除，更适合只排除某一个具体文件或目录。
 7. 需要路径 glob 或否定规则时，请使用 `.gitignore`。
-8. Markdown 折叠依赖渲染器支持 HTML `<details>/<summary>`；如渲染器不支持，请使用 `--output-format html` 查看独立 HTML 文件。
+8. Markdown 输出保持纯 Markdown 列表；需要可折叠目录树时，请使用 `--output-format html` 或 `--output-format both` 查看独立 HTML 文件。
 
 ## 运行测试
 
@@ -302,11 +291,18 @@ python -m twine upload dist/*
 
 ## 版本历史
 
+### v1.0.3 (2026-05-19)
+
+- 修复：`md` 输出误用 HTML `<details>/<summary>` 树，恢复为原有纯 Markdown 列表格式
+- 保留：`html` 输出继续提供可折叠目录树
+- 新增：回归测试覆盖 Markdown 列表格式，防止 md/html 渲染逻辑再次混淆
+- 更新：README 和 `xgentree --help` 明确 Markdown 与 HTML 输出边界
+
 ### v1.0.2 (2026-05-19)
 
 - 新增：`--output-format {none,md,html,both}`，默认 `md`
 - 新增：可生成独立 HTML 文件，命名规则为同 stem 改 `.html`
-- 变更：Markdown 目录树改为基于 `<details>/<summary>` 的可折叠结构
+- 新增：HTML 目录树基于 `<details>/<summary>` 提供可折叠结构
 - 变更：默认节点描述从 `desc` 改为字面量 `${description}`
 - 增强：`xgentree --help` 补充输出格式、折叠边界和命名规则
 

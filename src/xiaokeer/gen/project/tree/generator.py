@@ -102,7 +102,18 @@ class MarkdownGenerator:
         return "\n".join(["## 配置信息", "", "```json", config_json, "```"])
 
     def _generate_tree(self, node: TreeNode, indent_level: int = 0) -> str:
-        return self._generate_html_tree(node, indent_level)
+        lines = []
+
+        item_line = self._format_item(node, indent_level)
+        lines.append(item_line)
+
+        if node.is_dir:
+            sorted_children = sorted(node.children, key=lambda x: (not x.is_dir, x.name.lower()))
+            for child in sorted_children:
+                child_content = self._generate_tree(child, indent_level + 1)
+                lines.append(child_content)
+
+        return "\n".join(lines)
 
     def _generate_html_tree(self, node: TreeNode, indent_level: int = 0) -> str:
         indent = " " * (self.INDENT_SIZE * indent_level)
@@ -164,7 +175,7 @@ class MarkdownGenerator:
     def _build_html_content(self, tree: TreeNode) -> str:
         project_path_str = escape(str(self.project_path).replace("\\", "/"), quote=True)
         config_json = escape(json.dumps(self.config_data, ensure_ascii=False, indent=2), quote=False)
-        tree_html = "\n".join(self._generate_tree(child) for child in tree.children)
+        tree_html = "\n".join(self._generate_html_tree(child) for child in tree.children)
 
         return "\n".join(
             [

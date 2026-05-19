@@ -32,6 +32,8 @@ class TestCliHelp(unittest.TestCase):
         self.assertIn("--output-format", result.stdout)
         self.assertIn("none/md/html/both", result.stdout)
         self.assertIn("同 stem 的 .html", result.stdout)
+        self.assertIn("纯 Markdown 列表", result.stdout)
+        self.assertIn("需要可折叠树时使用 html 或 both", result.stdout)
         self.assertIn("xgentree -c config.json", result.stdout)
         self.assertIn("错误码", result.stdout)
 
@@ -39,7 +41,7 @@ class TestCliHelp(unittest.TestCase):
         result = self._run_cli("--version")
 
         self.assertEqual(result.returncode, 0)
-        self.assertEqual(result.stdout.strip(), "xgentree 1.0.2")
+        self.assertEqual(result.stdout.strip(), "xgentree 1.0.3")
 
     def test_invalid_output_format_is_rejected(self):
         result = self._run_cli("-c", "config.json", "--output-format", "pdf")

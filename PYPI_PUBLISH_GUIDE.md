@@ -151,7 +151,7 @@ git ls-files .env
 
 `git ls-files .env` 应该没有任何输出。
 
-### 6.2 发布 1.0.2 的完整命令
+### 6.2 发布 1.0.3 的完整命令
 
 ```bash
 cd /Users/chongwen002/project/xiaokeer-gen-project-tree
@@ -184,10 +184,10 @@ xgentree --version
 验证指定版本：
 
 ```bash
-python3 -m venv /tmp/xgentree-verify-1.0.2
-source /tmp/xgentree-verify-1.0.2/bin/activate
+python3 -m venv /tmp/xgentree-verify-1.0.3
+source /tmp/xgentree-verify-1.0.3/bin/activate
 pip install -U pip
-pip install xiaokeer.gen.project.tree==1.0.2
+pip install xiaokeer.gen.project.tree==1.0.3
 xgentree --help
 xgentree --version
 xgentree -c /path/to/config.json --output-format none
