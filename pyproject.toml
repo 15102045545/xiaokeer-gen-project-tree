@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "xiaokeer.gen.project.tree"
-version = "1.0.4"
-description = "一个将项目目录结构转换为Markdown/HTML文档的命令行工具，支持按名称排除、精确相对路径排除和.gitignore解析，并提示覆盖已有业务说明的风险。"
+version = "1.0.5"
+description = "一个将项目目录结构转换为Markdown/HTML文档的命令行工具，支持排除规则、.gitignore解析和配置文件失真检查。"
 readme = "README.md"
 requires-python = ">=3.8"
 authors = [{ name = "xiaokeer" }]

@@ -25,6 +25,7 @@ class TestCliHelp(unittest.TestCase):
         result = self._run_cli("--help")
 
         self.assertEqual(result.returncode, 0)
+        self.assertIn("--check-distortion", result.stdout)
         self.assertIn("exclude_paths", result.stdout)
         self.assertIn("exclude_list", result.stdout)
         self.assertIn("相对于 project_path 根目录", result.stdout)
@@ -36,12 +37,14 @@ class TestCliHelp(unittest.TestCase):
         self.assertIn("需要可折叠树时使用 html 或 both", result.stdout)
         self.assertIn("xgentree -c config.json", result.stdout)
         self.assertIn("错误码", result.stdout)
+        self.assertIn("配置文件失真", result.stdout)
+        self.assertIn("5", result.stdout)
 
     def test_version_outputs_package_version(self):
         result = self._run_cli("--version")
 
         self.assertEqual(result.returncode, 0)
-        self.assertEqual(result.stdout.strip(), "xgentree 1.0.4")
+        self.assertEqual(result.stdout.strip(), "xgentree 1.0.5")
 
     def test_help_warns_about_description_placeholder_and_overwrite_risk(self):
         result = self._run_cli("--help")
@@ -108,6 +111,57 @@ class TestCliHelp(unittest.TestCase):
             self.assertEqual(result.returncode, 0)
             self.assertTrue((project / "tree.md").exists())
             self.assertTrue((project / "tree.html").exists())
+
+    def test_check_distortion_success_does_not_write_output_file(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp) / "project"
+            project.mkdir()
+            output_file = project / "tree.md"
+            output_file.write_text("# existing tree", encoding="utf-8")
+            config = Path(tmp) / "config.json"
+            config.write_text(
+                json.dumps(
+                    {
+                        "project_path": str(project),
+                        "exclude_list": [],
+                        "exclude_paths": [],
+                        "output_filename": "tree.md",
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            result = self._run_cli("-c", str(config), "--check-distortion")
+
+            self.assertEqual(result.returncode, 0)
+            self.assertIn("未发现失真点", result.stdout)
+            self.assertEqual(output_file.read_text(encoding="utf-8"), "# existing tree")
+
+    def test_check_distortion_reports_points_and_returns_error_code_5(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            project = Path(tmp) / "project"
+            project.mkdir()
+            config = Path(tmp) / "config.json"
+            config.write_text(
+                json.dumps(
+                    {
+                        "project_path": str(project),
+                        "exclude_list": ["missing.txt"],
+                        "exclude_paths": ["src/generated/client.py"],
+                        "output_filename": "tree.md",
+                    }
+                ),
+                encoding="utf-8",
+            )
+
+            result = self._run_cli("-c", str(config), "--check-distortion")
+
+            self.assertEqual(result.returncode, 5)
+            self.assertIn("配置文件失真点", result.stdout)
+            self.assertIn("exclude_list[0]", result.stdout)
+            self.assertIn("exclude_paths[0]", result.stdout)
+            self.assertIn("output_filename", result.stdout)
+            self.assertFalse((project / "tree.md").exists())
 
 
 if __name__ == "__main__":

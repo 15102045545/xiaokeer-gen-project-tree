@@ -4,6 +4,7 @@ import sys
 
 from . import __version__
 from .config import Config, ConfigError
+from .distortion import ConfigDistortionChecker
 from .generator import GeneratorError, MarkdownGenerator
 from .scanner import DirectoryScanner
 
@@ -38,6 +39,7 @@ def parse_args():
   xgentree --version
   xgentree --config config.json
   xgentree -c ./config.json --verbose
+  xgentree -c config.json --check-distortion
   xgentree -c config.json --output-format none
   xgentree -c config.json --output-format html
 
@@ -69,6 +71,15 @@ def parse_args():
   - 输出文档包含项目路径、配置 JSON 和带跳转链接的目录树。
   - Markdown 输出不包含 HTML details/summary；需要可折叠树时使用 html 或 both。
 
+配置文件失真检查:
+  - --check-distortion 只检查配置文件相对项目现状是否失真，不生成任何输出文件。
+  - project_path 必须存在且是目录。
+  - exclude_list 中的名称或 basename 通配规则必须能在项目任意位置匹配到文件/文件夹。
+  - exclude_list 中的特殊值 ".gitignore" 要求 project_path 根目录存在 .gitignore。
+  - exclude_paths 中的项目根相对路径必须实际存在。
+  - output_filename 要求 project_path 下已存在对应 Markdown 输出树文件，或同 stem 的 HTML 输出树文件。
+  - 检查结果会输出具体配置项位置，例如 exclude_list[2]、exclude_paths[0]、output_filename。
+
 重要风险:
   - 新生成的节点说明默认是字面量 ${description}，它只是待补充占位符，不代表真实业务语义。
   - xgentree 不会读取、合并或保留已有文档中人工填写的说明；同名输出文件会被重新写入。
@@ -90,6 +101,7 @@ def parse_args():
   2  project_path 不存在。
   3  project_path 不是目录。
   4  输出文件无写入权限。
+  5  配置文件存在失真点。
   99 未知错误。
         """,
     )
@@ -99,6 +111,11 @@ def parse_args():
         choices=("none", "md", "html", "both"),
         default="md",
         help="输出格式: none/md/html/both。默认 md；html 使用同 stem 的 .html 文件。",
+    )
+    parser.add_argument(
+        "--check-distortion",
+        action="store_true",
+        help="检查配置文件相对项目现状是否存在失真点；只输出失真列表，不生成文件。",
     )
     parser.add_argument("-v", "--verbose", action="store_true", help="显示详细日志")
     parser.add_argument("--version", action="version", version=f"xgentree {__version__}")
@@ -111,6 +128,20 @@ def main() -> int:
     logger = logging.getLogger(__name__)
 
     try:
+        if args.check_distortion:
+            logger.info("开始检查配置文件失真...")
+            checker = ConfigDistortionChecker.from_file(args.config)
+            distortion_points = checker.check()
+
+            if not distortion_points:
+                print("\n✅ 配置文件未发现失真点")
+                return 0
+
+            print("\n⚠️ 配置文件失真点:")
+            for point in distortion_points:
+                print(f"  - {point.location}: {point.value_for_output()} -> {point.message}")
+            return 5
+
         logger.info("开始加载配置...")
         config = Config.from_file(args.config)
         logger.info(f"项目路径: {config.project_path}")

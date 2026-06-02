@@ -1,5 +1,5 @@
 from pathlib import Path, PurePosixPath, PureWindowsPath
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 import json
 import logging
 
@@ -14,6 +14,29 @@ class ConfigError(Exception):
 
     def __str__(self):
         return f"[错误码 {self.error_code}] {self.message}"
+
+
+def load_raw_config(config_path: str) -> Tuple[Path, Dict[str, Any]]:
+    path = Path(config_path)
+
+    if not path.suffix:
+        path = path.with_suffix(".json")
+
+    if not path.is_absolute():
+        path = Path.cwd() / path
+
+    if not path.exists():
+        raise ConfigError(f"配置文件不存在: {path}", error_code=1)
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            raw_config = json.load(f)
+        logger.info(f"成功加载配置文件: {path}")
+        return path, raw_config
+    except json.JSONDecodeError as e:
+        raise ConfigError(f"配置文件JSON格式错误: {e}", error_code=1)
+    except PermissionError:
+        raise ConfigError(f"无权限读取配置文件: {path}", error_code=1)
 
 
 class Config:
@@ -63,25 +86,7 @@ class Config:
         }
 
     def _load_config(self, config_path: str) -> None:
-        path = Path(config_path)
-
-        if not path.suffix:
-            path = path.with_suffix(".json")
-
-        if not path.is_absolute():
-            path = Path.cwd() / path
-
-        if not path.exists():
-            raise ConfigError(f"配置文件不存在: {path}", error_code=1)
-
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                self._raw_config = json.load(f)
-            logger.info(f"成功加载配置文件: {path}")
-        except json.JSONDecodeError as e:
-            raise ConfigError(f"配置文件JSON格式错误: {e}", error_code=1)
-        except PermissionError:
-            raise ConfigError(f"无权限读取配置文件: {path}", error_code=1)
+        _, self._raw_config = load_raw_config(config_path)
 
     def _validate_and_apply(self) -> None:
         self._validate_project_path()
@@ -161,7 +166,8 @@ class Config:
 
         self._exclude_paths = validated_paths
 
-    def _normalize_exclude_path(self, raw_path: str) -> str:
+    @staticmethod
+    def _normalize_exclude_path(raw_path: str) -> str:
         normalized_input = raw_path.replace("\\", "/")
 
         if (

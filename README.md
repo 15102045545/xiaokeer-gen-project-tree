@@ -11,6 +11,7 @@
 - Markdown 输出保持原有纯 Markdown 列表格式
 - HTML 输出生成基于 `<details>/<summary>` 的可折叠目录树
 - 支持 `none` / `md` / `html` / `both` 四种命令行输出模式
+- 支持配置文件失真检查，输出具体失真配置位置并返回错误码
 - 支持中文文件名和路径
 - 输出文档包含本次生成使用的配置
 - 默认节点描述为字面量 `${description}`，方便后续人工或工具替换
@@ -76,6 +77,12 @@ xgentree -c config.json --output-format none
 xgentree -c config.json --output-format both
 ```
 
+只检查配置文件相对项目现状是否失真：
+
+```bash
+xgentree -c config.json --check-distortion
+```
+
 生成文件会写入：
 
 ```text
@@ -124,6 +131,7 @@ xgentree --help
 xgentree --version
 xgentree -c config.json
 xgentree -c ./config.json --verbose
+xgentree -c config.json --check-distortion
 xgentree -c config.json --output-format none
 xgentree -c config.json --output-format html
 xgentree -c config.json --output-format both
@@ -156,6 +164,41 @@ xgentree --help
 | `both` | 同时生成 Markdown 和 HTML |
 
 Markdown 文件保持原有纯 Markdown 列表格式，不包含 HTML `<details>/<summary>`。HTML 文件包含完整 HTML 文档、最小 CSS 和基于 `<details>/<summary>` 的可折叠目录树。HTML 目录默认展开，便于打开后直接浏览，也可以手动折叠。
+
+## 配置文件失真检查
+
+`--check-distortion` 只检查配置文件相对项目现状是否存在失真点，不扫描生成目录树，也不会写入 Markdown / HTML 文件。
+
+```bash
+xgentree -c config.json --check-distortion
+```
+
+返回码：
+
+| 返回码 | 行为 |
+|--------|------|
+| `0` | 未发现配置文件失真点 |
+| `5` | 发现至少一个配置文件失真点，并已输出列表 |
+
+检查范围：
+
+| 配置项 | 检查语义 |
+|--------|----------|
+| `project_path` | 路径必须存在且是目录 |
+| `exclude_list` | 精确 name 或 basename 通配规则必须能在项目任意位置匹配到文件/文件夹 |
+| `exclude_list` 中的 `.gitignore` | 项目根目录必须存在 `.gitignore` 文件 |
+| `exclude_paths` | 规范化后的项目根相对路径必须存在，文件和目录均可 |
+| `output_filename` | `project_path/output_filename` 或同 stem 的 `.html` 输出树文件至少存在一个 |
+| 未识别顶层配置项 | 输出为无法检查的报告项，避免配置静默漂移 |
+
+输出会包含具体配置位置，例如：
+
+```text
+⚠️ 配置文件失真点:
+  - exclude_list[2]: "*.pyc" -> 项目中不存在匹配该名称或 basename 通配规则的文件/文件夹
+  - exclude_paths[0]: "src/generated/client.py" -> 项目根目录下不存在该相对路径: src/generated/client.py
+  - output_filename: "tree.md" -> 未找到已存在的输出树文件: /path/project/tree.md 或 /path/project/tree.html
+```
 
 ## 排除规则
 
@@ -277,6 +320,7 @@ Markdown 文件保持原有纯 Markdown 列表格式，不包含 HTML `<details>
 | 2 | `project_path` 不存在 |
 | 3 | `project_path` 不是目录 |
 | 4 | 输出文件无写入权限 |
+| 5 | 配置文件存在失真点 |
 | 99 | 未知错误 |
 
 ## 注意事项
@@ -292,6 +336,7 @@ Markdown 文件保持原有纯 Markdown 列表格式，不包含 HTML `<details>
 9. `exclude_paths` 是按项目根相对路径精确排除，更适合只排除某一个具体文件或目录。
 10. 需要路径 glob 或否定规则时，请使用 `.gitignore`。
 11. Markdown 输出保持纯 Markdown 列表；需要可折叠目录树时，请使用 `--output-format html` 或 `--output-format both` 查看独立 HTML 文件。
+12. 使用 `--check-distortion` 可以在生成前检查配置里的路径或名称是否已经与项目现状脱节。
 
 ## 运行测试
 
@@ -322,6 +367,14 @@ python -m twine upload dist/*
 不要把 PyPI token 写入 README、发布指南、源码或任何会提交的文件。
 
 ## 版本历史
+
+### v1.0.5 (2026-06-02)
+
+- 新增：`--check-distortion` 配置文件失真检查模式
+- 新增：输出失真点所在配置位置，例如 `exclude_list[2]`、`exclude_paths[0]`、`output_filename`
+- 新增：发现失真点时返回错误码 `5`，便于 CI 或脚本识别
+- 文档：README、CLI help 和发布指南同步配置失真检查能力
+- 测试：新增失真检查器和 CLI 回归测试
 
 ### v1.0.4 (2026-05-20)
 
